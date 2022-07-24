@@ -1,0 +1,464 @@
+---
+title: "BELLABEAT CASE STUDY July 2022"
+author: "Elena Olivo"
+date:   "July 23, 2022"
+output: html_notebook
+---
+
+#### Recent trends in smart device usage suggest health data collection by
+#### users is an important feature with high engagement.
+
+
+#### Bellabeat would like to engage their app users in new ways, by looking at
+#### data from these smart devices to create new opportunities within the app.
+
+
+#### The aim here is data exploration to discover insights that can benefit 
+#### Bellabeat, and find new ways to engage their app users.
+
+
+
+
+
+#### Load packages:
+#### * Tidyverse
+#### * ggplot
+#### * dplyr
+#### * skimr, janitor, here
+#### * reshape
+
+
+
+
+# Examine health dataset to begin analysis
+
+
+```{r}
+head(health_data)
+```
+#### Cleaning data
+
+
+```{r}
+clean_names(health_data)
+```
+#### Organize and examine data Body Mass Index (BMI)
+<https://www.niddk.nih.gov/health-information/health-statistics/overweight-obesity>
+
+
+```{r}
+health_data %>% arrange(-BMI)
+```
+#### BMI by healthy ratio (under 24.9)
+
+
+```{r}
+filter(health_data, BMI <=24.9) 
+```
+#### BMI Analysis unhealthy level (over 25.0)
+
+
+```{r}
+filter(health_data, BMI > 25.0)
+```
+#### Examine and observations
+
+
+```{r}
+health_data %>% summarize(mean_BMI = mean(BMI))
+```
+#### Data examination
+
+
+```{r}
+health_data %>% summarize(max_BMI = max(BMI))
+```
+#### Analysis: Mean BMI 25.1, and (one outlier of 47.54). Target users by BMI greater than 24.9 (unhealthy BMI)?
+
+
+```{r}
+health_data %>% arrange(-BMI)
+```
+## New dataset
+
+
+```{r}
+health_data2 <- health_data %>% arrange(-BMI)
+```
+
+
+#### Examine with a plot
+
+
+```{r}
+ggplot(data= health_data2) +
+  geom_point(mapping=aes(x=Id, y=BMI), color ="blue") +
+  labs(title = "BMI LEVELS")
+```
+### One OUTLIER of BMI = 47.54
+
+### Density plot for another look at data
+
+
+```{r}
+ggplot(health_data2, aes(x=BMI)) +
+  geom_density(color = "darkblue", fill = "lightblue") +
+  labs(title = "BMI Levels")
+```
+
+
+#### Analysis: Mean BMI levels 25. Target this level and higher.
+
+
+## Sleep pattern analysis
+
+
+```{r}
+head(sleep_data)
+```
+#### Look at Sleep data
+
+
+```{r}
+clean_names(sleep_data)
+```
+#### Analyze by unique Id
+
+
+```{r}
+sleep_data %>% group_by(Id, SleepDay) %>% drop_na() %>% summarize(max_bed=max(TotalTimeInBed),
+max_sleep=max(TotalMinutesAsleep))
+```
+#### Analyze data by ID
+
+
+```{r}
+user_0366 %>% filter(Id ==1503960366) 
+```
+#### Filter by Id
+
+
+```{r}
+head(user_1503)
+```
+#### Analysis: Make note that more time in bed than sleeping = Meditation exercise?
+<https://www.healthline.com/health/meditation-for-sleep>
+
+
+### Select unique ID (1503) for analysis with a scatterplot
+
+
+```{r}
+ggplot(user_1503, mapping=aes(x=max_bed, y=max_sleep)) +
+  geom_point() +
+  labs(title = "Comparison Sleep vs. Bed Time")
+```
+#### Create new dataframes for better plot (specific observations from month)
+
+
+```{r}
+x <- c(346, 407, 442, 367, 712, 320, 377, 364, 384, 449, 323, 274, 393, 354)
+y <- c(327, 384, 412, 340, 700, 304, 360, 325, 361, 430, 277, 245, 366, 341)
+day <- c(12, 13, 15, 16, 17, 19, 20, 21, 23, 24, 25, 26, 28, 29)
+```
+
+
+#### Step 2 of creating new dataframes
+
+
+```{r}
+df1 <- data.frame(x, y, day)
+df2 <- melt(df1, id.vars='day')
+head(df2)
+```
+### New plot style to better show comparison
+#### (x = Max in-bed time, y = time asleep). 
+#### Small set of objects from dataset used for visualization.
+
+
+```{r}
+ggplot(df2, aes(x=day, y=value, fill=variable)) +
+    geom_bar(stat='identity', position='dodge') +
+    labs(title = "MEDITATION BEFORE SLEEP OPPORTUNITY?") 
+```
+
+
+#### Analysis: Suggest meditation exercise through app (_audible_?)
+
+
+
+## Correlation between steps and calories by day?
+
+
+```{r observations}
+nrow(steps_by_day)
+nrow(calories_by_day)
+```
+
+
+#### Steps data (daily)
+
+
+```{r}
+steps_by_day %>%
+  summary()
+```
+#### Calories data - daily
+
+
+```{r}
+calories_by_day %>%
+  summary()
+```
+#### Clean data
+
+
+```{r}
+clean_names(steps_by_day)
+```
+
+
+#### Clean Data
+
+
+```{r}
+clean_names(calories_by_day)
+```
+
+
+#### Combine datasets
+
+
+```{r}
+stepscal_1 <-merge(steps_by_day, calories_by_day, by = c("Id", "ActivityDay"))
+```
+
+
+#### Look at combination dataset
+
+
+```{r}
+head(stepscal_1)
+```
+#### Arrange dataset
+```{r}
+arrange(stepscal_1, desc(StepTotal))
+```
+#### Any trends via plot?
+
+
+```{r}
+ggplot(data=stepscal_1) +
+   geom_point(mapping=aes(x=StepTotal, y=Calories), color="purple") +
+   labs(title = "Relation between steps and calories")
+```
+
+
+#### Another plot with smooth feature
+```{r}
+ggplot(stepscal_1, aes(x= StepTotal, y= Calories)) + 
+  geom_point() +        
+  geom_smooth(method="gam", 
+formula = y ~s(x))
+```
+
+
+#### Analysis: More steps, more calories burned!
+
+
+## New Steps/Calories analysis: Look at data, target by unique Id, patterns?
+
+
+```{r}
+glimpse(hourly_steps_v1)
+```
+
+
+#### Review data
+
+
+```{r}
+glimpse(hourly_calories_v1)
+```
+
+
+#### Merge datasets
+```{r}
+combined_dataV2 <-inner_join(hourly_calories_v1, hourly_steps_v1, by = c("Id", "ActivityHour"))
+```
+
+
+#### Filter by Id
+
+
+```{r}
+combined_dataV2 %>% filter(Id == "4702921684")
+```
+
+
+#### View data for creation of alert system of low activity points in day
+
+```{r}
+user_1684 %>%
+  select(ActivityHour,
+         Calories,
+         StepTotal) %>%
+  summary()
+```
+
+
+#### Subset of rows
+
+
+```{r}
+user_1684v2 <- user_1684[c(1:24), c(2,3:4)]
+```
+
+
+#### Arrange subset
+
+```{r}
+arrange(user_1684v2)
+```
+
+
+#### Plot
+
+
+```{r}
+ggplot(user_1684v2) +
+  geom_point(mapping = aes(x=ActivityHour, y=StepTotal)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title = "Tailor app to individual by daily data usage")
+```
+
+
+#### During lower points of activity during day, perhaps an opportunity 
+#### to engage user to be more active via alert?
+
+
+## New dataset on steps
+```{r}
+head(hourly_intense_active2)
+```
+
+
+#### Summary of dataset
+```{r}
+colnames(hourly_intense_active2)
+```
+
+
+#### Look at sample of 50 observatons
+```{r}
+summary(hourly_intense_active2, 50)
+```
+
+
+#### Plot for analysis
+```{r}
+ggplot(data=hourly_intense_active2) +
+geom_point(mapping =aes (x=AverageIntensity, y=TotalIntensity))
+ 
+```
+
+
+#### Subset for patterns or trends by unique user Id
+```{r}
+user_9391 <-hourly_intense_active2 %>% filter(Id == "8877689391") 
+```
+
+
+#### Get summary data
+```{r}
+min(user_9391$ActivityHour)
+```
+
+
+#### Get additional summary data
+```{r}
+max(user_9391$ActivityHour)
+```
+
+
+#### Can this data be used to explain higher activity on a particular day/hour?
+
+
+#### Additional look at unique Id
+```{r}
+user_9391 %>% arrange(ActivityHour)
+```
+
+
+#### Subset by Id and sample of data
+```{r}
+head(user_9391, 24) %>% arrange(ActivityHour)
+```
+
+
+#### View new subset dataframe
+```{r}
+head(user_9391v2)
+```
+
+
+#### Plot this subset
+```{r}
+ggplot(data = user_9391v2) +
+  geom_point(mapping = aes(x=ActivityHour, y = TotalIntensity)) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    labs(title = "Identify patterns over weeks")
+```
+
+
+#### Another style of plot
+
+
+```{r}
+ggplot(data = user_9391v2) +
+  geom_bar(mapping = aes(x=ActivityHour, fill = TotalIntensity)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title="Pattern analysis by levels over time")
+```
+
+
+#### Follow up survey to identify days/hours when activity is low vs. high and why?
+
+
+# SUMMARY
+#### * Target users via app by Body Mass Index (BMI): Diet and nutrition programs by BMI level?
+#### * Alert users via app when BMI is approaching unhealthy level (_audible_) 
+#### * Create meditation exercise through app for bedtime (_before_ / _after_)
+#### * Target individuals via app to increase activity levels during low periods of activity (_day_/_week_)
+#### * Use surveys via app to question users on periods of low activity vs. high activity?
+
+## DATASET REFERENCE 
+<https://www.kaggle.com/datasets/arashnic/fitbit>
+
+## SMART WATCH DATA RESEARCH/TRENDS
+<https://www.delveinsight.com/blog/wearable-technology-trends-2022>
+
+<https://www.crn.com/slide-shows/internet-of-things/ces-2022-10-wearable-technologies-for-health-safety-fitness#.YpaevEdbhEE.link>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
